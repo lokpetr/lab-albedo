@@ -1,29 +1,31 @@
 import sys
 import time
-import imageio
 from picamera2 import Picamera2
 from libcamera import Transform
 
-name = sys.argv[1]        
-shutter = int(sys.argv[2])  
+name = sys.argv[1]          # имя снимка без .png
+shutter = int(sys.argv[2])  # выдержка, мкс
 
 fileName = "data/" + name + ".png"
 camera = Picamera2()
 config = camera.create_still_configuration(
     main={"size": (2560, 1440)},
-    transform=Transform(hflip=1, vflip=1),              
-    controls={"AeEnable": False, "ExposureTime": shutter, 
-              "AnalogueGain": 1.0,                       
-              "AwbEnable": False, "ColourGains": (1.5, 1.5)})  
+    transform=Transform(hflip=1, vflip=1),              # поворот на 180°
+    controls={"AeEnable": False, "ExposureTime": shutter,  # выдержка, мкс
+              "AnalogueGain": 1.0,                       # усиление, как ISO 100
+              "AwbEnable": False, "ColourGains": (1.5, 1.5)})  # баланс белого
 camera.configure(config)
 camera.start()
-time.sleep(1)               
-camera.capture_file(fileName)
-meta = camera.capture_metadata()
-camera.stop()
-print("выдержка %d мкс, усиление %.2f" % (meta["ExposureTime"], meta["AnalogueGain"]))
+time.sleep(1)               # дать камере применить настройки
 
-photo = imageio.imread(fileName)[:, :, :3]
+request = camera.capture_request()   # один кадр: и файл, и массив, и настройки
+request.save("main", fileName)
+photo = request.make_array("main")   # массив (строки, столбцы, R G B)
+meta = request.get_metadata()
+request.release()
+camera.stop()
+
+print("выдержка %d мкс, усиление %.2f" % (meta["ExposureTime"], meta["AnalogueGain"]))
 top = photo.max(axis=(0, 1))
 print("%s: R=%d G=%d B=%d" % (name, top[0], top[1], top[2]))
 if top.max() == 255:
