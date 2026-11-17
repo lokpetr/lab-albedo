@@ -30,3 +30,5 @@ top = photo.max(axis=(0, 1))
 print("%s: R=%d G=%d B=%d" % (name, top[0], top[1], top[2]))
 if top.max() == 255:
     print("Пересвет! Уменьшите выдержку")
+sudo apt update
+sudo apt install -y python3-picamera2
