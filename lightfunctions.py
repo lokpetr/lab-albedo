@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import imageio
 from scipy import ndimage
 from cycler import cycler
 
@@ -26,7 +27,7 @@ def straighten(photo):
 
 
 def readIntensity(photoName, plotName, lamp, surface):
-    photo = straighten(plt.imread(photoName) * 255)   # PNG: plt.imread даёт 0..1, переводим в 0..255
+    photo = straighten(imageio.imread(photoName))
     background = photo[ROWS, BACKGROUND_COLS, 0:3].swapaxes(0, 1)
 
     cut = photo[ROWS, COLS, 0:3].swapaxes(0, 1)
