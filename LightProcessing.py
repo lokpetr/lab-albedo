@@ -7,6 +7,13 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 import lightFunctions as light
 
+# ---------- ИМЕНА ВАШИХ СНИМКОВ в папке data — меняйте только здесь
+mercuryFile = "рт1(new)(100000).png"                      # ртутная лампа
+sheetFiles = ["white-tungsten.png", "red-tungsten.png", "yellow-tungsten.png",
+              "green-tungsten.png", "blue-tungsten.png"]   # белый, красный, жёлтый, зелёный, синий
+linFiles = {12500: "lin-12500.png", 25000: "lin-25000.png",
+            50000: "lin-50000.png", 100000: "lin-100000.png"}   # выдержка, мкс: файл
+
 dataPath = "data/"
 plotsPath = "plots/"
 os.makedirs(plotsPath, exist_ok=True)
@@ -26,9 +33,9 @@ def readRGB(fileName, g=None):
 
 
 # ---------- п2.4 Калибровка по длине волны
-mercury = light.readIntensity(dataPath + "white-mercury.png", plotsPath + "mercury.png",
+mercury = light.readIntensity(dataPath + mercuryFile, plotsPath + "mercury.png",
                               "ртутная лампа", "белый лист")
-red, green, blue = readRGB("white-mercury.png").T
+red, green, blue = readRGB(mercuryFile).T
 
 # 435,8, 487,7 и 546,1 нм — первые три пика синего+зелёного,
 # 611,6 нм — самый яркий пик красного канала (+1 балл)
@@ -50,8 +57,8 @@ plt.legend()
 plt.savefig(plotsPath + "calibration.png")
 
 # ---------- п2.5 Интенсивности
-intensity = [light.readIntensity(dataPath + s + "-tungsten.png", plotsPath + s + "-tungsten.png",
-                                 "лампа накаливания", n + " лист") for s, n in zip(sheets, names)]
+intensity = [light.readIntensity(dataPath + f, plotsPath + s + ".png", "лампа накаливания", n + " лист")
+             for f, s, n in zip(sheetFiles, sheets, names)]
 
 plt.figure(figsize=(10, 5))
 plt.gca().set_facecolor("lightgrey")
@@ -82,8 +89,8 @@ def X(v):
     x = np.asarray(v, dtype=float) / 255
     return np.stack([x, x**2, x**3], axis=-1)
 
-times = sorted(int(f[4:-4]) for f in os.listdir(dataPath) if f.startswith("lin-"))
-lin = [readRGB("lin-%d.png" % t).ravel() for t in times]
+times = sorted(linFiles)
+lin = [readRGB(linFiles[t]).ravel() for t in times]
 rows = []
 for t1, t2, v1, v2 in zip(times, times[1:], lin, lin[1:]):
     ok = (v1 > 1) & (v2 < 250)                   # без нуля и без пересвета
@@ -94,7 +101,7 @@ coef = np.linalg.lstsq(A, b, rcond=None)[0]
 g = lambda v: X(v) @ coef
 
 weights = [0.2989, 0.5866, 0.1144]
-linear = [readRGB(s + "-tungsten.png", g) @ weights for s in sheets]
+linear = [readRGB(f, g) @ weights for f in sheetFiles]
 
 plt.figure(figsize=(10, 5))
 plt.gca().set_facecolor("lightgrey")
