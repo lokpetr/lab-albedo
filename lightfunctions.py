@@ -16,6 +16,10 @@ BACKGROUND_COLS = slice(1130, 1350)
 # наклонены. Поворачиваем участок со спектром обратно на этот угол, градусы.
 ANGLE = 5
 
+# True — если на снимке красный край сверху, а синий снизу: спектр переворачивается,
+# чтобы длина волны росла с номером пикселя. ROWS и COLS — как на исходном снимке.
+FLIP = False
+
 
 def straighten(photo):
     top, bottom = ROWS.start - 60, ROWS.stop + 60
@@ -32,6 +36,9 @@ def readIntensity(photoName, plotName, lamp, surface):
 
     cut = photo[ROWS, COLS, 0:3].swapaxes(0, 1)
     rgb = np.mean(cut, axis=(0))
+    if FLIP:
+        rgb = rgb[::-1]
+        background = background[:, ::-1]
     luma = 0.2989 * rgb[:, 0] + 0.5866 * rgb[:, 1] + 0.1144 * rgb[:, 2]
 
     plt.rc('axes', prop_cycle=(cycler('color', ['r', 'g', 'b'])))
