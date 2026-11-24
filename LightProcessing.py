@@ -1,5 +1,4 @@
-# lightProcessing.py — калибровка (п2.4), интенсивности и альбедо (п2.5)
-# Рядом должны лежать lightFunctions.py и папка data со снимками с Raspberry Pi.
+
 import os
 import imageio
 import numpy as np
@@ -7,12 +6,11 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 import lightFunctions as light
 
-# ---------- ИМЕНА ВАШИХ СНИМКОВ в папке data — меняйте только здесь
-mercuryFile = "рт1(new)(100000).png"                      # ртутная лампа
+mercuryFile = "рт1(new)(100000).png"                     
 sheetFiles = ["white-tungsten.png", "red-tungsten.png", "yellow-tungsten.png",
-              "green-tungsten.png", "blue-tungsten.png"]   # белый, красный, жёлтый, зелёный, синий
+              "green-tungsten.png", "blue-tungsten.png"]  
 linFiles = {12500: "lin-12500.png", 25000: "lin-25000.png",
-            50000: "lin-50000.png", 100000: "lin-100000.png"}   # выдержка, мкс: файл
+            50000: "lin-50000.png", 100000: "lin-100000.png"}   
 
 dataPath = "data/"
 plotsPath = "plots/"
@@ -29,18 +27,14 @@ def readRGB(fileName, g=None):
     if g is not None:
         cut = g(cut)
     rgb = np.mean(cut, axis=1)
-    return rgb[::-1] if light.FLIP else rgb    # красный сверху → переворачиваем
+    return rgb[::-1] if light.FLIP else rgb   
 
-
-# ---------- п2.4 Калибровка по длине волны
 mercury = light.readIntensity(dataPath + mercuryFile, plotsPath + "mercury.png",
                               "ртутная лампа", "белый лист")
 red, green, blue = readRGB(mercuryFile).T
 
-# 435,8, 487,7 и 546,1 нм — первые три пика синего+зелёного,
-# 611,6 нм — самый яркий пик красного канала (+1 балл)
 peaks, _ = find_peaks(blue + green, prominence=20)
-pixels = [peaks[0], peaks[1], peaks[2], np.argmax(red)]   # или впишите свои вручную
+pixels = [peaks[0], peaks[1], peaks[2], np.argmax(red)]  
 lines = [435.8, 487.7, 546.1, 611.6]
 print("пиксели пиков:", np.array(pixels))
 
@@ -55,8 +49,6 @@ plt.xlabel("Номер пикселя")
 plt.ylabel("Длина волны, нм")
 plt.legend()
 plt.savefig(plotsPath + "calibration.png")
-
-# ---------- п2.5 Интенсивности
 intensity = [light.readIntensity(dataPath + f, plotsPath + s + ".png", "лампа накаливания", n + " лист")
              for f, s, n in zip(sheetFiles, sheets, names)]
 
@@ -69,7 +61,6 @@ plt.ylabel("Яркость")
 plt.legend()
 plt.savefig(plotsPath + "intensities.png")
 
-# ---------- п2.5 Альбедо
 whiteSafe = np.maximum(intensity[0], 1)
 plt.figure(figsize=(10, 5))
 plt.gca().set_facecolor("lightgrey")
@@ -82,9 +73,6 @@ plt.ylabel("Альбедо")
 plt.legend()
 plt.savefig(plotsPath + "albedos.png")
 
-# ---------- п2.5 Пересчёт по тоновой кривой (+1 балл)
-# g(v) = a·x + b·x² + c·x³, x = v/255. Свет на снимке с выдержкой t2 в t2/t1 раз
-# больше, чем на t1: g(v2) − (t2/t1)·g(v1) = 0 во всех точках, и ещё g(128) = 1.
 def X(v):
     x = np.asarray(v, dtype=float) / 255
     return np.stack([x, x**2, x**3], axis=-1)
@@ -93,7 +81,7 @@ times = sorted(linFiles)
 lin = [readRGB(linFiles[t]).ravel() for t in times]
 rows = []
 for t1, t2, v1, v2 in zip(times, times[1:], lin, lin[1:]):
-    ok = (v1 > 1) & (v2 < 250)                   # без нуля и без пересвета
+    ok = (v1 > 1) & (v2 < 250)                  
     rows.append(X(v2[ok]) - t2 / t1 * X(v1[ok]))
 A = np.vstack(rows + [100 * X(128)])
 b = np.append(np.zeros(len(A) - 1), 100)
