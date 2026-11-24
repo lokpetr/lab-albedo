@@ -1,11 +1,10 @@
-# lightMeasure.py — снимок спектра с постоянными настройками
-#   python3 lightMeasure.py white-tungsten 50000
+
 import subprocess
 import sys
 import imageio
 
-name = sys.argv[1]          # имя снимка без .png
-shutter = sys.argv[2]       # выдержка, мкс
+name = sys.argv[1]
+shutter = sys.argv[2]      
 
 fileName = "data/" + name + ".png"
 subprocess.run(["raspistill", "-n", "-t", "1000", "-w", "2560", "-h", "1440", "-rot", "180",
